@@ -50,6 +50,10 @@ class StableWildcard:
                 # it can be used to provide backwards compatibility.
                 "version": ([1], {'default': 1})
             },
+            "hidden": {
+                "id": "UNIQUE_ID",
+                "extra": "EXTRA_PNGINFO",
+            },
             "optional": {}
         }
 
@@ -60,6 +64,15 @@ class StableWildcard:
         using the given seed.
         """
 
+        # Get some kwargs
+        id = kwargs['id']
+        extras = kwargs['extra']['workflow']['extra']
+
+        # Create a namespace if necessary
+        if 'stable-wildcards' not in extras:
+            extras['stable-wildcards'] = {}
+
+        # Setup RNG
         rng = Random(int(seed))
 
         # Search & replace matches
@@ -81,6 +94,10 @@ class StableWildcard:
             # Search for more wildcards
             match = self.WILDCARD_PATTERN.search(prompt)
 
+        # Output result console
         print('\033[96m Stable Wildcard: ({}) "{}"\033[0m'.format(seed, prompt))
+
+        # Save the result in metadata by id
+        extras['stable-wildcards'][id] = prompt
 
         return prompt,
