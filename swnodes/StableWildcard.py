@@ -52,7 +52,7 @@ class StableWildcard:
             },
             "hidden": {
                 "id": "UNIQUE_ID",
-                "extra": "EXTRA_PNGINFO",
+                "png_info": "EXTRA_PNGINFO",
             },
             "optional": {}
         }
@@ -63,14 +63,6 @@ class StableWildcard:
         To achieve stable results a new random object is created
         using the given seed.
         """
-
-        # Get some kwargs
-        id = kwargs['id']
-        extras = kwargs['extra']['workflow']['extra']
-
-        # Create a namespace if necessary
-        if 'stable-wildcards' not in extras:
-            extras['stable-wildcards'] = {}
 
         # Setup RNG
         rng = Random(int(seed))
@@ -97,7 +89,30 @@ class StableWildcard:
         # Output result console
         print('\033[96m Stable Wildcard: ({}) "{}"\033[0m'.format(seed, prompt))
 
-        # Save the result in metadata by id
-        extras['stable-wildcards'][id] = prompt
+        # Save output into metadata if everything exists
+        if 'id' in kwargs and 'png_info' in kwargs:
+            id = kwargs['id']
+            png_info = kwargs['png_info']
+
+            # Check for workflow and extra
+            if 'workflow' in png_info:
+                workflow = png_info['workflow']
+
+                # Create extra if missing
+                if 'extra' not in workflow:
+                    workflow['extra'] = {}
+
+                # Create a namespace if necessary
+                if 'stable-wildcards' not in workflow['extra']:
+                    workflow['extra']['stable-wildcards'] = {}
+
+                # Save the result in metadata by id
+                workflow['extra']['stable-wildcards'][id] = prompt
+
+            else:
+                print('\033[96m Stable Wildcard: Workflow missing, output not saved in metadata\033[0m')
+
+        else:
+            print('\033[96m Stable Wildcard: Hidden input missing, output not saved in metadata\033[0m')
 
         return prompt,
