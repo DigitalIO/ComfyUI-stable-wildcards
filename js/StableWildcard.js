@@ -61,11 +61,39 @@ function loadStableWildcardNode(node, app) {
   Listen for prompt changes and update title
 */
 function stableWildcardNodeCreated(node, app) {
+  let lastCall;
+  
+  // Use the change event to update the title for the prompt (textarea)
   node.widgets[0].element.addEventListener(
     'change',
     updateTitle.bind(null, node),
     false
   );
+  
+  // The seed widget does not offer a change callback.
+  // Instead proxy the widget and hook the set function
+  node.widgets[1]  = new Proxy(node.widgets[1], {
+    set(target, p, newValue, receiver) {
+      
+      // We are now responsible for all updates
+      target[p] = newValue;
+      
+      // If the property updated was the value (thats the seed we care about)
+      if (p === 'value') {
+        // Using the UI slider to change the seed can call this function
+        // hundreds of times per second. We don't want to send a server request for
+        // every update, so only update once the value has stoped changing
+        if (lastCall) {
+          clearTimeout(lastCall);
+        }
+        
+        lastCall = setTimeout(updateTitle.bind(null, node), 250);
+      }
+      
+      // Return true for no issues
+      return true;
+    }
+  });
 }
 
 // Create the Stable Wildcard extension
