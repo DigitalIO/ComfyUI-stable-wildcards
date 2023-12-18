@@ -18,6 +18,15 @@
 import sys
 from random import Random
 import re
+import server
+from aiohttp import web
+
+
+@server.PromptServer.instance.routes.post("/stable-wildcards/process")
+async def process_stable_wildcards(req):
+    json_data = await req.json()
+    prompt = StableWildcard.process_wildcards(json_data['prompt'], json_data['seed'])
+    return web.json_response({"prompt": prompt}, content_type='application/json')
 
 
 class StableWildcard:
@@ -43,48 +52,57 @@ class StableWildcard:
         return {
             "required": {
                 # Without dynamicPrompts set to false ComfyUI will randomize our prompt before we get to it!
-                "prompt":  ('STRING', {'default': '', 'multiline': True, 'dynamicPrompts': False}),
-                "seed"  :  ('INT', {'default': 0, 'min': 0, 'max': sys.maxsize}),
+                "prompt" : ('STRING', {'default': '', 'multiline': True, 'dynamicPrompts': False}),
+                "seed"   : ('INT', {'default': 0, 'min': 0, 'max': sys.maxsize}),
 
                 # Currently unused, but if a breaking change must be introduced
                 # it can be used to provide backwards compatibility.
                 "version": ([1], {'default': 1})
             },
-            "hidden": {
-                "id": "UNIQUE_ID",
+            "hidden"  : {
+                "id"      : "UNIQUE_ID",
                 "png_info": "EXTRA_PNGINFO",
             },
             "optional": {}
         }
 
-    def execute(self, prompt, seed, **kwargs):
+    @staticmethod
+    def process_wildcards(prompt, seed):
         """
         Process wildcards using a seed to produce stable output.
         To achieve stable results a new random object is created
         using the given seed.
         """
-
         # Setup RNG
         rng = Random(int(seed))
 
         # Search & replace matches
-        match = self.WILDCARD_PATTERN.search(prompt)
+        match = StableWildcard.WILDCARD_PATTERN.search(prompt)
         while match:
-
             # Get the options - Remove the {}, split by | character
             # Because the search pattern requires at least one character,
             # ops is guaranteed to have at least one option
             ops = match.group()[1:-1].split('|')
 
             # Pick a random option.
-            pick = ops[rng.randint(0, len(ops)-1)]
+            pick = ops[rng.randint(0, len(ops) - 1)]
 
             # Replace the match and update the string
             # Limit one match incase there are repeated wildcards
             prompt = prompt.replace(match.group(), pick, 1)
 
             # Search for more wildcards
-            match = self.WILDCARD_PATTERN.search(prompt)
+            match = StableWildcard.WILDCARD_PATTERN.search(prompt)
+
+        return prompt
+
+    def execute(self, prompt, seed, **kwargs):
+        """
+        Process the wildcards for execution
+        """
+
+        # Process the wildcards
+        prompt = self.process_wildcards(prompt, seed)
 
         # Output result console
         print('\033[96m Stable Wildcard: ({}) "{}"\033[0m'.format(seed, prompt))
