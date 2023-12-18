@@ -19,7 +19,8 @@
 # SOFTWARE.
 #*/
 
-import { app } from "../../../scripts/app.js";
+import { app } from "../../scripts/app.js";
+import { api } from "../../scripts/api.js";
 
 /**
   Change the title for the text area to include the loaded result
@@ -37,6 +38,36 @@ function loadStableWildcardNode(node, app) {
   node.widgets[0].element.title = wildcardData[node.id];
 }
 
+/**
+  Attach to the textarea and seed and update the title after every change
+*/
+function stableWildcardNodeCreated(node, app) {
+  async function updateTitle(e) {
+    
+    const promptValue = node.widgets[0].element.value;
+    const seedValue = node.widgets[1].value;
+    
+    // Get the resulting string from the server
+    const response = await api.fetchApi(`/stable-wildcards/process`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({prompt: promptValue, seed: seedValue})
+      });
+    
+    const data = await  response.json();
+    
+    node.widgets[0].element.title = data['prompt'];
+  }
+  
+  // Add event listeners
+  node.widgets[0].element.addEventListener(
+    'change',
+    updateTitle,
+    false
+  );
+
+}
+
 // Create the Stable Wildcard extension
 const StableWildcardsExtension = {
   name: 'StableWildcards',
@@ -44,8 +75,13 @@ const StableWildcardsExtension = {
     if (node.type !== "Stable Wildcards") {
       return;
     }
-    
     loadStableWildcardNode(node, app);
+  },
+  nodeCreated(node, app) {
+    if (node.comfyClass !== "Stable Wildcards") {
+      return;
+    }
+    stableWildcardNodeCreated(node, app);
   }
 }
 
