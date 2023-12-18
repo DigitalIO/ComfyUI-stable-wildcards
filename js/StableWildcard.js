@@ -1,3 +1,4 @@
+/**
 # The MIT License (MIT)
 #
 # Copyright © 2023 Michael Wolfe (DigitalIO)
@@ -16,34 +17,37 @@
 # CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#
+#*/
 
-from .swnodes.StableWildcard import StableWildcard
-from .swnodes.NonDynamicString import NondynamicString
+import { app } from "../../../scripts/app.js";
 
-# Nodes passed to ComfyUI.
-# Node names must be unique
-NODE_MAP = [
-    {
-        "name" : "Stable Wildcards",
-        "class": StableWildcard,
-        "disp" : "Stable Wildcard Output"
-    },
-    {
-        "name" : "NonDynamic String",
-        "class": NondynamicString,
-        "disp" : "NonDynamic String"
+/**
+  Change the title for the text area to include the loaded result
+*/
+function loadStableWildcardNode(node, app) {
+  let wildcardData = app.graph.extra['stable-wildcards'];
+
+  // Only act if there is data to act on
+  if (!wildcardData || !wildcardData[node.id]) {
+    console.log('No stable-wildcard data found');
+    return;
+  }
+    
+  // Change the title
+  node.widgets[0].element.title = wildcardData[node.id];
+}
+
+// Create the Stable Wildcard extension
+const StableWildcardsExtension = {
+  name: 'StableWildcards',
+  loadedGraphNode(node, app) {
+    if (node.type !== "Stable Wildcards") {
+      return;
     }
-]
+    
+    loadStableWildcardNode(node, app);
+  }
+}
 
-# Create the expected node maps for ComfyUI
-NODE_CLASS_MAPPINGS = {}
-NODE_DISPLAY_NAME_MAPPINGS = {}
-
-for x in NODE_MAP:
-    x['class'].CATEGORY = 'StableWildcards'
-    NODE_CLASS_MAPPINGS[x['name']] = x['class']
-    NODE_DISPLAY_NAME_MAPPINGS[x['name']] = x['disp']
-
-# Location of web extensions
-WEB_DIRECTORY = './js'
+// Register app
+app.registerExtension(StableWildcardsExtension);
