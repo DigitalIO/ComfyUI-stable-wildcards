@@ -23,14 +23,33 @@ import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 
 /**
+  Call the server to process the prompt and set it as the textarea title
+*/
+async function updateTitle(node, e) {
+  const promptValue = node.widgets[0].element.value;
+  const seedValue = node.widgets[1].value;
+
+  // Get the resulting string from the server
+  const response = await api.fetchApi(`/stable-wildcards/process`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({prompt: promptValue, seed: seedValue})
+  });
+  const data = await  response.json();
+
+  // Update the title
+  node.widgets[0].element.title = data['prompt'];
+}
+
+/**
   Change the title for the text area to include the loaded result
 */
 function loadStableWildcardNode(node, app) {
   let wildcardData = app.graph.extra['stable-wildcards'];
 
-  // Only act if there is data to act on
+  // Fallback to use the server on changes
   if (!wildcardData || !wildcardData[node.id]) {
-    console.log('No stable-wildcard data found');
+    updateTitle(node, null);
     return;
   }
     
@@ -39,33 +58,14 @@ function loadStableWildcardNode(node, app) {
 }
 
 /**
-  Attach to the textarea and seed and update the title after every change
+  Listen for prompt changes and update title
 */
 function stableWildcardNodeCreated(node, app) {
-  async function updateTitle(e) {
-    
-    const promptValue = node.widgets[0].element.value;
-    const seedValue = node.widgets[1].value;
-    
-    // Get the resulting string from the server
-    const response = await api.fetchApi(`/stable-wildcards/process`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({prompt: promptValue, seed: seedValue})
-      });
-    
-    const data = await  response.json();
-    
-    node.widgets[0].element.title = data['prompt'];
-  }
-  
-  // Add event listeners
   node.widgets[0].element.addEventListener(
     'change',
-    updateTitle,
+    updateTitle.bind(null, node),
     false
   );
-
 }
 
 // Create the Stable Wildcard extension
