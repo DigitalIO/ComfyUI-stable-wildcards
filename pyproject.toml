@@ -1,14 +1,14 @@
 [project]
 name = "comfyui-stable-wildcards"
 description = "Wildcard implementation that can be reproduced with workflows."
-version = "1.0.0"
-license = "LICENSE"
+version = "1.1.0"
+license = "MIT"
 
 [project.urls]
 Repository = "https://github.com/DigitalIO/ComfyUI-stable-wildcards"
 #  Used by Comfy Registry https://comfyregistry.org
 
 [tool.comfy]
-PublisherId = ""
+PublisherId = "digitalio"
 DisplayName = "ComfyUI-stable-wildcards"
 Icon = ""
